@@ -18,6 +18,18 @@ This is C implementation of the idea by saahriktu, his version in Rust can be fo
 
 ---
 
+## Window Manager & Compositor Setup
+
+`pictura-stainless` can be easily paired with your window manager using the `-p` flag. 
+
+See the **[Window Manager Integration Guide](WM_INTEGRATION.md)** for copy-paste configurations, keybindings, and auto-rotation timers for:
+
+- **Wayland:** Sway, Hyprland, River, Niri (`swaymsg`, `swww`, `hyprpaper`)
+- **X11:** i3wm, bspwm, dwm, AwesomeWM, Qtile (`feh`, `xwallpaper`)
+- **Automation:** Systemd user timers & shell background loops
+
+---
+
 ## Requirements
 
 - **OS:** Linux
@@ -104,16 +116,6 @@ swww img "$(pictura-stainless -rp ~/Pictures/Wallpapers)"
 swaymsg output "*" bg "$(pictura-stainless -rp ~/Pictures/Wallpapers)" fill
 feh --bg-fill "$(pictura-stainless -rp ~/Pictures/Wallpapers)"
 ```
-
-## Window Manager & Compositor Setup
-
-`pictura-stainless` can be easily paired with your window manager using the `-p` flag. 
-
-See the **[Window Manager Integration Guide](WM_INTEGRATION.md)** for copy-paste configurations, keybindings, and auto-rotation timers for:
-
-- **Wayland:** Sway, Hyprland, River, Niri (`swaymsg`, `swww`, `hyprpaper`)
-- **X11:** i3wm, bspwm, dwm, AwesomeWM, Qtile (`feh`, `xwallpaper`)
-- **Automation:** Systemd user timers & shell background loops
 
 ---
 
