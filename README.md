@@ -47,6 +47,12 @@ cd pictura-stainless
 make
 ```
 
+#### GCC <16, Clang <18
+
+```
+make CSTD=gnu2x
+```
+
 ### Install:
 ```sh
 # System-wide (/usr/local/bin)
