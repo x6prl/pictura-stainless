@@ -1,0 +1,97 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build (${{ matrix.target.name }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: x86_64-linux
+            arch: x86_64
+            cc: gcc-14
+            pkg: gcc-14
+            cflags: "-std=gnu23 -O2 -flto -mtune=generic -pipe -fomit-frame-pointer -fno-stack-protector -no-pie -Wall -Wextra -Wpedantic -D_GNU_SOURCE"
+            ldflags: "-flto -no-pie -Wl,-O1,--sort-common,--as-needed,-s"
+          - name: aarch64-linux
+            arch: aarch64
+            cc: aarch64-linux-gnu-gcc-14
+            pkg: gcc-14-aarch64-linux-gnu binutils-aarch64-linux-gnu
+            cflags: "-std=gnu23 -O2 -flto -pipe -fomit-frame-pointer -fno-stack-protector -no-pie -Wall -Wextra -Wpedantic -D_GNU_SOURCE"
+            ldflags: "-flto -no-pie -Wl,-O1,--sort-common,--as-needed,-s"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.target.pkg }}
+
+      - name: Build binary
+        run: |
+          make clean
+          make CC="${{ matrix.target.cc }}" \
+               CFLAGS="${{ matrix.target.cflags }}" \
+               LDFLAGS="${{ matrix.target.ldflags }}"
+
+      - name: Package archive
+        run: |
+          TAG_NAME="${GITHUB_REF_NAME:-latest}"
+          ARCHIVE_NAME="pictura-stainless-${TAG_NAME}-${{ matrix.target.name }}.tar.gz"
+
+          # Include binary and any existing documentation safely
+          FILES="pictura-stainless"
+          [ -f README.md ] && FILES="${FILES} README.md"
+          [ -f LICENSE ] && FILES="${FILES} LICENSE"
+
+          tar -czvf "${ARCHIVE_NAME}" ${FILES}
+
+          # Generate SHA256 checksum
+          sha256sum "${ARCHIVE_NAME}" > "${ARCHIVE_NAME}.sha256"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: assets-${{ matrix.target.name }}
+          path: |
+            pictura-stainless-*.tar.gz
+            pictura-stainless-*.tar.gz.sha256
+
+  publish:
+    name: Publish Release
+    needs: build
+    runs-on: ubuntu-24.04
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all built assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: assets-*
+          merge-multiple: true
+
+      - name: Generate consolidated checksum file
+        run: |
+          cat *.sha256 > sha256sums.txt
+          rm -f *.sha256
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            pictura-stainless-*.tar.gz
+            sha256sums.txt
+          generate_release_notes: true
+          draft: false
+          prerelease: false
